@@ -1,0 +1,29 @@
+###
+
+POST http://localhost:3000/comments 
+Content-Type: application/json
+
+{
+    "sender": "Hodaya",
+    "comment": "My new comment", 
+    "postId": "673d8d5a23fcf4162143f8bb"
+}
+
+###
+
+GET http://localhost:3000/comments/673d8d5a23fcf4162143f8bb
+
+
+###
+
+PUT http://localhost:3000/comments/673dbc5dd40a3fe74bad6394
+Content-Type: application/json
+
+{
+    "comment": "My updated comment"
+}
+
+
+###
+
+DELETE http://localhost:3000/comments/673dbc5dd40a3fe74bad6394
