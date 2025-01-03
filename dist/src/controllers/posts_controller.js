@@ -13,25 +13,29 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const posts_model_1 = __importDefault(require("../models/posts_model"));
+const posts_model_2 = __importDefault(require("../models/posts_model"));
 const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const postBody = req.body;
     try {
-        const post = yield posts_model_1.default.create(postBody);
+        console.log("Post Body:", postBody);
+        const post = yield posts_model_2.default.create(postBody);
+        console.log("Created Post:", post);
         res.status(201).send(post);
     }
     catch (error) {
-        res.status(400).send(error.message);
+        console.error("Error Creating Post:", error);
+        res.status(400).send({ error: error.message, body: req.body });
     }
 });
 const getPosts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const filter = req.query.sender;
     try {
         if (filter) {
-            const posts = yield posts_model_1.default.find({ sender: filter });
+            const posts = yield posts_model_2.default.find({ sender: filter });
             res.send(posts);
         }
         else {
-            const posts = yield posts_model_1.default.find();
+            const posts = yield posts_model_2.default.find();
             res.send(posts);
         }
     }
@@ -42,7 +46,7 @@ const getPosts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 const getPostById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const id = req.params.id;
     try {
-        const post = yield posts_model_1.default.findById(id);
+        const post = yield posts_model_2.default.findById(id);
         if (post) {
             res.send(post);
         }
@@ -59,7 +63,7 @@ const getPostBySender = (req, res) => __awaiter(void 0, void 0, void 0, function
     console.log(filter);
     try {
         if (filter.sender) {
-            const post = yield posts_model_1.default.find({ sender: filter.sender });
+            const post = yield posts_model_2.default.find({ sender: filter.sender });
             res.send(post);
         }
     }
@@ -74,7 +78,10 @@ const updatedPost = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         return res.status(400).send("Post ID is required");
     }
     try {
-        const updatedPost = yield posts_model_1.default.findByIdAndUpdate(id, { sender, message });
+        const updatedPost = yield posts_model_2.default.findByIdAndUpdate(id, {
+            sender,
+            message,
+        });
         if (updatedPost) {
             updatedPost.sender = sender;
             updatedPost.message = message;
@@ -89,11 +96,22 @@ const updatedPost = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         res.status(400).send(error.message);
     }
 });
+const deleteItem = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const id = req.params.id;
+    try {
+        yield posts_model_1.default.findByIdAndDelete(id);
+        return res.send("item deleted");
+    }
+    catch (err) {
+        return res.status(400).send(err);
+    }
+});
 exports.default = {
     createPost,
     getPosts,
     getPostById,
     getPostBySender,
     updatedPost,
+    deleteItem,
 };
 //# sourceMappingURL=posts_controller.js.map

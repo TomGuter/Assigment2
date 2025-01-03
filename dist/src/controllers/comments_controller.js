@@ -14,6 +14,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const comments_model_1 = __importDefault(require("../models/comments_model"));
 const posts_model_1 = __importDefault(require("../models/posts_model"));
+const getAll = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const filter = Object.assign({}, req.query);
+    try {
+        const data = yield comments_model_1.default.find();
+        res.status(200).send(data);
+    }
+    catch (error) {
+        res.status(400).send(error);
+    }
+});
 const createComment = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { postId } = req.body;
     try {
@@ -81,7 +91,9 @@ const deleteComment = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         try {
             const post = yield comments_model_1.default.findByIdAndDelete(id);
             if (post) {
-                return res.status(200).send(`Comment with id ${id} deleted successfully.`);
+                return res
+                    .status(200)
+                    .send(`Comment with id ${id} deleted successfully.`);
             }
             else {
                 return res.status(200).send("Comment not found");
@@ -100,5 +112,6 @@ exports.default = {
     getCommentById,
     updateComment,
     deleteComment,
+    getAll,
 };
 //# sourceMappingURL=comments_controller.js.map
