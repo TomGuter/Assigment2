@@ -1,19 +1,21 @@
+import postModel from "../models/posts_model";
 import PostModel from "../models/posts_model";
-import {Request, Response} from "express";
-
+import { Request, Response } from "express";
 
 const createPost = async (req: Request, res: Response) => {
   const postBody = req.body;
   try {
+    console.log("Post Body:", postBody);
     const post = await PostModel.create(postBody);
+    console.log("Created Post:", post);
     res.status(201).send(post);
   } catch (error) {
-    res.status(400).send((error as Error).message);
+    console.error("Error Creating Post:", error);
+    res.status(400).send({ error: (error as Error).message, body: req.body });
   }
 };
 
-const getPosts = async (req: Request, res: Response) => { 
-
+const getPosts = async (req: Request, res: Response) => {
   const filter = req.query.sender;
   try {
     if (filter) {
@@ -26,7 +28,6 @@ const getPosts = async (req: Request, res: Response) => {
   } catch (error) {
     res.status(400).send((error as Error).message);
   }
-
 };
 
 const getPostById = async (req: Request, res: Response) => {
@@ -41,7 +42,7 @@ const getPostById = async (req: Request, res: Response) => {
   } catch (error) {
     res.status(400).send((error as Error).message);
   }
-}
+};
 
 const getPostBySender = async (req: Request, res: Response) => {
   const filter = req.query;
@@ -54,7 +55,7 @@ const getPostBySender = async (req: Request, res: Response) => {
   } catch (error) {
     res.status(400).send((error as Error).message);
   }
-}
+};
 
 const updatedPost = async (req: Request, res: Response) => {
   const id = req.params.id;
@@ -65,21 +66,32 @@ const updatedPost = async (req: Request, res: Response) => {
   }
 
   try {
-    const updatedPost = await PostModel.findByIdAndUpdate(id, { sender, message });
+    const updatedPost = await PostModel.findByIdAndUpdate(id, {
+      sender,
+      message,
+    });
     if (updatedPost) {
       updatedPost.sender = sender;
       updatedPost.message = message;
       await updatedPost.save();
       res.send(updatedPost);
-    } else {  
+    } else {
       res.status(400).send("Post not found");
     }
-} catch (error) {
-  res.status(400).send((error as Error).message);
-}
+  } catch (error) {
+    res.status(400).send((error as Error).message);
+  }
 };
 
-
+const deleteItem = async (req: Request, res: Response) => {
+  const id = req.params.id;
+  try {
+    await postModel.findByIdAndDelete(id);
+    return res.send("item deleted");
+  } catch (err) {
+    return res.status(400).send(err);
+  }
+};
 
 export default {
   createPost,
@@ -87,4 +99,5 @@ export default {
   getPostById,
   getPostBySender,
   updatedPost,
+  deleteItem,
 };

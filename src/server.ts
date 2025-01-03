@@ -16,7 +16,6 @@ const moduleApp = async (): Promise<Express> => {
     throw new Error("MONGO_URI is not set");
   }
 
-
   try {
     await mongoose.connect(process.env.DB_CONNECT);
     console.log("Connected to MongoDB");
@@ -26,18 +25,15 @@ const moduleApp = async (): Promise<Express> => {
   }
 
   const app = express();
-  
 
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({ extended: true }));
 
-
   app.use("/posts", postsRoutes);
   app.use("/comments", commentsRoutes);
-  app.use("/usersAuth", userRouter);
+  app.use("/auth", userRouter);
 
   return app;
 };
 
 export default moduleApp;
-

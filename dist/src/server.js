@@ -20,6 +20,7 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const body_parser_1 = __importDefault(require("body-parser"));
 const posts_route_1 = __importDefault(require("./routes/posts_route"));
 const comment_route_1 = __importDefault(require("./routes/comment_route"));
+const user_route_1 = __importDefault(require("./routes/user_route"));
 dotenv_1.default.config();
 const moduleApp = () => __awaiter(void 0, void 0, void 0, function* () {
     if (!process.env.DB_CONNECT) {
@@ -38,6 +39,7 @@ const moduleApp = () => __awaiter(void 0, void 0, void 0, function* () {
     app.use(body_parser_1.default.urlencoded({ extended: true }));
     app.use("/posts", posts_route_1.default);
     app.use("/comments", comment_route_1.default);
+    app.use("/auth", user_route_1.default);
     return app;
 });
 exports.default = moduleApp;

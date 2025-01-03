@@ -14,9 +14,7 @@ const CommentSchema = new mongoose_1.default.Schema({
         required: true,
     },
     postId: {
-        type: mongoose_1.default.Schema.Types.ObjectId,
-        ref: "Post",
-        required: true,
+        type: String,
     },
 });
 const CommentModel = mongoose_1.default.model("Comment", CommentSchema);
