@@ -21,7 +21,24 @@ const body_parser_1 = __importDefault(require("body-parser"));
 const posts_route_1 = __importDefault(require("./routes/posts_route"));
 const comment_route_1 = __importDefault(require("./routes/comment_route"));
 const user_route_1 = __importDefault(require("./routes/user_route"));
+const swagger_jsdoc_1 = __importDefault(require("swagger-jsdoc"));
+const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
+const app = (0, express_1.default)();
 dotenv_1.default.config();
+const options = {
+    definition: {
+        openapi: "3.0.0",
+        info: {
+            title: "Assignment 2 2025 REST API",
+            version: "1.0.0",
+            description: "REST server including authentication using JWT, CRUD operations on posts and comments, and a user registration system.",
+        },
+        servers: [{ url: "http://localhost:3000", },],
+    },
+    apis: ["./src/routes/*.ts"],
+};
+const specs = (0, swagger_jsdoc_1.default)(options);
+app.use("/api-docs", swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(specs));
 const moduleApp = () => __awaiter(void 0, void 0, void 0, function* () {
     if (!process.env.DB_CONNECT) {
         throw new Error("MONGO_URI is not set");
@@ -34,7 +51,6 @@ const moduleApp = () => __awaiter(void 0, void 0, void 0, function* () {
         console.error("Failed to connect to MongoDB", error);
         throw error;
     }
-    const app = (0, express_1.default)();
     app.use(body_parser_1.default.json());
     app.use(body_parser_1.default.urlencoded({ extended: true }));
     app.use("/posts", posts_route_1.default);

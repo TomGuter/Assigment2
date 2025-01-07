@@ -1,7 +1,6 @@
 import request from "supertest";
 import initApp from "../server";
 import mongoose from "mongoose";
-// import postsModel from "../models/posts_model";
 import { Express } from "express";
 import userModel from "../models/user_model";
 import postsModel from "../models/posts_model";
@@ -26,7 +25,7 @@ type UserInfo = {
   _id?: string;
 };
 const userInfo: UserInfo = {
-  email: "eliav@gmail.com",
+  email: "tom@gmail.com",
   password: "123456",
 };
 
@@ -37,6 +36,10 @@ describe("Auth Tests", () => {
   });
 
   test("Auth Registration fail", async () => {
+    
+    await request(app).post("/auth/register").send(userInfo);
+  
+    
     const response = await request(app).post("/auth/register").send(userInfo);
     expect(response.statusCode).not.toBe(200);
     console.log("ressssss::::::", response.statusCode);
@@ -67,9 +70,8 @@ describe("Auth Tests", () => {
 
   test("Get protected API", async () => {
     const response = await request(app).post("/posts").send({
-      owner: "invalid owner",
-      title: "My First post",
-      content: "This is my first post",
+      sender: "invalid owner",
+      message: "My First post",
     });
     expect(response.statusCode).not.toBe(201);
     const response2 = await request(app)
@@ -91,9 +93,8 @@ describe("Auth Tests", () => {
         authorization: "jwt " + userInfo.accessToken + "1",
       })
       .send({
-        owner: userInfo._id,
-        title: "My First post",
-        content: "This is my first post",
+        sender: userInfo._id,
+        message: "This is my first post",
       });
     expect(response.statusCode).not.toBe(201);
   });
@@ -122,7 +123,7 @@ describe("Auth Tests", () => {
   });
 
   test("Refresh token multiuple usage", async () => {
-    //login - get a refresh token
+    
     const response = await request(app).post("/auth/login").send({
       email: userInfo.email,
       password: userInfo.password,
@@ -133,20 +134,20 @@ describe("Auth Tests", () => {
     userInfo.accessToken = response.body.accessToken;
     userInfo.refreshToken = response.body.refreshToken;
 
-    //first time use the refresh token and get a new one
+    
     const response2 = await request(app).post("/auth/refresh").send({
       refreshToken: userInfo.refreshToken,
     });
     expect(response2.statusCode).toBe(200);
     const newRefreshToken = response2.body.refreshToken;
 
-    //second time use the old refresh token and expect to fail
+    
     const response3 = await request(app).post("/auth/refresh").send({
       refreshToken: userInfo.refreshToken,
     });
     expect(response3.statusCode).not.toBe(200);
 
-    //try to use the new refresh token and expect to fail
+    
     const response4 = await request(app).post("/auth/refresh").send({
       refreshToken: newRefreshToken,
     });
@@ -165,10 +166,10 @@ describe("Auth Tests", () => {
     userInfo.accessToken = response.body.accessToken;
     userInfo.refreshToken = response.body.refreshToken;
 
-    //wait for 6 seconds
+    
     await new Promise((resolve) => setTimeout(resolve, 6000));
 
-    //try to access with expired token
+    
     const response2 = await request(app)
       .post("/posts")
       .set({

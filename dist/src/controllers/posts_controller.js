@@ -23,7 +23,6 @@ const createPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         res.status(201).send(post);
     }
     catch (error) {
-        console.error("Error Creating Post:", error);
         res.status(400).send({ error: error.message, body: req.body });
     }
 });
@@ -71,32 +70,27 @@ const getPostBySender = (req, res) => __awaiter(void 0, void 0, void 0, function
         res.status(400).send(error.message);
     }
 });
-const updatedPost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const updatePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const id = req.params.id;
     const { sender, message } = req.body;
     if (!id) {
-        return res.status(400).send("Post ID is required");
+        res.status(400).send("Post ID is required");
+        return;
     }
     try {
-        const updatedPost = yield posts_model_2.default.findByIdAndUpdate(id, {
-            sender,
-            message,
-        });
+        const updatedPost = yield posts_model_2.default.findByIdAndUpdate(id, { sender, message }, { new: true, runValidators: true });
         if (updatedPost) {
-            updatedPost.sender = sender;
-            updatedPost.message = message;
-            yield updatedPost.save();
-            res.send(updatedPost);
+            res.status(200).send(updatedPost);
         }
         else {
-            res.status(400).send("Post not found");
+            res.status(404).send("Post not found");
         }
     }
     catch (error) {
         res.status(400).send(error.message);
     }
 });
-const deleteItem = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const deletePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const id = req.params.id;
     try {
         yield posts_model_1.default.findByIdAndDelete(id);
@@ -111,7 +105,7 @@ exports.default = {
     getPosts,
     getPostById,
     getPostBySender,
-    updatedPost,
-    deleteItem,
+    updatePost,
+    deletePost,
 };
 //# sourceMappingURL=posts_controller.js.map

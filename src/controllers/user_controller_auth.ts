@@ -11,6 +11,12 @@ const register = async (req: Request, res: Response) => {
     return;
   }
   try {
+    const existingUser = await userModel.findOne({ email: email });
+    if (existingUser) {
+      res.status(400).send("User already exists");
+      return;
+    }
+
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
     const user = await userModel.create({
@@ -70,7 +76,7 @@ const login = async (req: Request, res: Response) => {
       return;
     }
 
-    //TODO: generate access token§
+
     const userId: string = user._id.toString();
     const tokens = generateTokens(userId);
     if (!tokens) {
@@ -100,7 +106,7 @@ const logout = async (req: Request, res: Response) => {
     res.status(400).send("missing refresh token");
     return;
   }
-  //first validate the refresh token
+
   if (!process.env.TOKEN_SECRET) {
     res.status(400).send("missing auth configuration");
     return;
@@ -139,8 +145,8 @@ const logout = async (req: Request, res: Response) => {
   );
 };
 
-const refresh = async (req: Request, res: Response) => {
-  //first validate the refresh token
+const refreshToken = async (req: Request, res: Response) => {
+  
   const refreshToken = req.body.refreshToken;
   if (!refreshToken) {
     res.status(400).send("invalid token");
@@ -158,45 +164,45 @@ const refresh = async (req: Request, res: Response) => {
         res.status(403).send("invalid token");
         return;
       }
-      //find the user
+      
       const payload = data as TokenPayload;
       try {
         const user = await userModel.findOne({ _id: payload._id });
         if (!user) {
-          res.status(400).send("invalid token");
+          res.status(400).send("invalid token access");
           return;
         }
-        //check that the token exists in the user
+        
         if (!user.refreshTokens || !user.refreshTokens.includes(refreshToken)) {
           user.refreshTokens = [];
           await user.save();
-          res.status(400).send("invalid token");
+          res.status(400).send("invalid token access");
           return;
         }
-        //generate a new access token
+        
         const newTokens = generateTokens(user._id.toString());
         if (!newTokens) {
           user.refreshTokens = [];
           await user.save();
-          res.status(400).send("missing auth configuration");
+          res.status(400).send("pwoblem with configuration");
           return;
         }
 
-        //delete the old refresh token
+        
         user.refreshTokens = user.refreshTokens.filter(
           (token) => token !== refreshToken
         );
-        //save the new refresh token in the user
+        
         user.refreshTokens.push(newTokens.refreshToken);
         await user.save();
 
-        //return the new access token and the new refresh token
+        
         res.status(200).send({
           accessToken: newTokens.accessToken,
           refreshToken: newTokens.refreshToken,
         });
       } catch (err) {
-        res.status(400).send("invalid token");
+        res.status(400).send("invalid token access");
       }
     }
   );
@@ -217,12 +223,12 @@ export const authMiddleware = (
     return;
   }
   if (!process.env.TOKEN_SECRET) {
-    res.status(400).send("missing auth configuration");
+    res.status(400).send("mprobelm with configuration");
     return;
   }
   jwt.verify(token, process.env.TOKEN_SECRET, (err, data) => {
     if (err) {
-      res.status(403).send("invalid token");
+      res.status(403).send("invalid token access");
       return;
     }
     const payload = data as TokenPayload;
@@ -231,4 +237,4 @@ export const authMiddleware = (
   });
 };
 
-export default { register, login, logout, refresh };
+export default { register, login, logout, refreshToken };
