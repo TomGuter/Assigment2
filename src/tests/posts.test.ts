@@ -22,7 +22,6 @@ const invalidPost = {
   content: "Test content",
 };
 
-
 beforeAll(async () => {
   app = await initApp();
   await postModel.deleteMany();
@@ -39,13 +38,36 @@ afterAll(async () => {
   await mongoose.connection.close();
 });
 
-
 describe("Posts API Test Suite", () => {
   describe("GET /posts", () => {
     test("Should return an empty list of posts initially", async () => {
       const response = await request(app).get("/posts");
       expect(response.statusCode).toBe(200);
       expect(response.body).toHaveLength(0);
+    });
+
+    test("Should return 400 and an error message if PostModel.find throws an error", async () => {
+      jest
+        .spyOn(postModel, "find")
+        .mockRejectedValueOnce(new Error("Database query error"));
+
+      const response = await request(app).get("/posts");
+
+      expect(response.statusCode).toBe(400);
+      expect(response.text).toBe("Database query error");
+    });
+
+    test("Should return 400 and an error message if PostModel.find (with sender filter) throws an error", async () => {
+      jest
+        .spyOn(postModel, "find")
+        .mockRejectedValueOnce(new Error("Database query error"));
+
+      const response = await request(app)
+        .get("/posts")
+        .query({ sender: "testSender" });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.text).toBe("Database query error");
     });
   });
 
@@ -81,7 +103,9 @@ describe("Posts API Test Suite", () => {
     });
 
     test("Should get post by sender", async () => {
-      const response = await request(app).get(`/posts?sender=${testPost.sender}`);
+      const response = await request(app).get(
+        `/posts?sender=${testPost.sender}`
+      );
       expect(response.statusCode).toBe(200);
       expect(response.body).toHaveLength(1);
       expect(response.body[0].sender).toBe(testPost.sender);
@@ -93,59 +117,74 @@ describe("Posts API Test Suite", () => {
       expect(response.body._id).toBe(postId);
     });
 
+    test("Should return 400 and an error message if PostModel.findById throws an error", async () => {
+      jest
+        .spyOn(postModel, "findById")
+        .mockRejectedValueOnce(new Error("Database query error"));
+
+      const response = await request(app).get("/posts/invalid-id");
+
+      expect(response.statusCode).toBe(400);
+      expect(response.text).toBe("Database query error");
+    });
+
     test("Should fail to get a non-existent post by ID", async () => {
-      const response = await request(app).get("/posts/67447b032ce3164be7c4412d");
+      const response = await request(app).get(
+        "/posts/67447b032ce3164be7c4412d"
+      );
       expect(response.statusCode).toBe(400);
     });
   });
 
-    test("Should update a post by ID", async () => {
-    const updatedPost = { sender: "Hodaya", message: "This is an updated test post" };
-  
+  test("Should update a post by ID", async () => {
+    const updatedPost = {
+      sender: "Hodaya",
+      message: "This is an updated test post",
+    };
+
     const response = await request(app)
       .put(`/posts/${postId}`)
       .set("authorization", `JWT ${accessToken}`)
       .send(updatedPost);
-  
+
     expect(response.statusCode).toBe(200);
     expect(response.body.sender).toBe(updatedPost.sender);
     expect(response.body.message).toBe(updatedPost.message);
   });
 
-    test("Should fail to update a post with invalid ID", async () => {
-    const updatedPost = { sender: "Hodaya", message: "This is an updated test post" };
+  test("Should fail to update a post with invalid ID", async () => {
+    const updatedPost = {
+      sender: "Hodaya",
+      message: "This is an updated test post",
+    };
     const invalidPostId = "6777b39a4c79d92f497af3eb";
-  
+
     const response = await request(app)
       .put(`/posts/${invalidPostId}`)
       .set("authorization", `JWT ${accessToken}`)
       .send(updatedPost);
-  
+
     expect(response.statusCode).not.toBe(200);
   });
 
-    describe("DELETE /posts/:id", () => {
+  describe("DELETE /posts/:id", () => {
     test("Should delete a post successfully", async () => {
       const deleteResponse = await request(app)
         .delete(`/posts/${postId}`)
         .set("authorization", `JWT ${accessToken}`);
       expect(deleteResponse.statusCode).toBe(200);
-  
+
       const getResponse = await request(app).get(`/posts/${postId}`);
       expect(getResponse.statusCode).toBe(400);
     });
-  
+
     test("Should fail to delete a post with invalid ID", async () => {
       const invalidPostId = "invalidPostId";
-  
+
       const deleteResponse = await request(app)
         .delete(`/posts/${invalidPostId}`)
         .set("authorization", `JWT ${accessToken}`);
       expect(deleteResponse.statusCode).not.toBe(200);
     });
   });
-
-  
 });
-
-

@@ -58,13 +58,8 @@ const getPostById = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
     }
 });
 const getPostBySender = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const filter = req.query;
-    console.log(filter);
     try {
-        if (filter.sender) {
-            const post = yield posts_model_2.default.find({ sender: filter.sender });
-            res.send(post);
-        }
+        yield posts_model_2.default.find({ sender: req.query.sender });
     }
     catch (error) {
         res.status(400).send(error.message);
@@ -73,10 +68,6 @@ const getPostBySender = (req, res) => __awaiter(void 0, void 0, void 0, function
 const updatePost = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const id = req.params.id;
     const { sender, message } = req.body;
-    if (!id) {
-        res.status(400).send("Post ID is required");
-        return;
-    }
     try {
         const updatedPost = yield posts_model_2.default.findByIdAndUpdate(id, { sender, message }, { new: true, runValidators: true });
         if (updatedPost) {

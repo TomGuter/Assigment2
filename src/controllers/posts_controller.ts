@@ -44,13 +44,8 @@ const getPostById = async (req: Request, res: Response) => {
 };
 
 const getPostBySender = async (req: Request, res: Response) => {
-  const filter = req.query;
-  console.log(filter);
   try {
-    if (filter.sender) {
-      const post = await PostModel.find({ sender: filter.sender });
-      res.send(post);
-    }
+    await PostModel.find({ sender: req.query.sender });
   } catch (error) {
     res.status(400).send((error as Error).message);
   }
@@ -59,11 +54,6 @@ const getPostBySender = async (req: Request, res: Response) => {
 const updatePost = async (req: Request, res: Response) => {
   const id = req.params.id;
   const { sender, message } = req.body;
-
-  if (!id) {
-    res.status(400).send("Post ID is required");
-    return;
-  }
 
   try {
     const updatedPost = await PostModel.findByIdAndUpdate(

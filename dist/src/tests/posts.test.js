@@ -49,6 +49,24 @@ describe("Posts API Test Suite", () => {
             expect(response.statusCode).toBe(200);
             expect(response.body).toHaveLength(0);
         }));
+        test("Should return 400 and an error message if PostModel.find throws an error", () => __awaiter(void 0, void 0, void 0, function* () {
+            jest
+                .spyOn(posts_model_1.default, "find")
+                .mockRejectedValueOnce(new Error("Database query error"));
+            const response = yield (0, supertest_1.default)(app).get("/posts");
+            expect(response.statusCode).toBe(400);
+            expect(response.text).toBe("Database query error");
+        }));
+        test("Should return 400 and an error message if PostModel.find (with sender filter) throws an error", () => __awaiter(void 0, void 0, void 0, function* () {
+            jest
+                .spyOn(posts_model_1.default, "find")
+                .mockRejectedValueOnce(new Error("Database query error"));
+            const response = yield (0, supertest_1.default)(app)
+                .get("/posts")
+                .query({ sender: "testSender" });
+            expect(response.statusCode).toBe(400);
+            expect(response.text).toBe("Database query error");
+        }));
     });
     describe("POST /posts", () => {
         test("Should add a new post successfully", () => __awaiter(void 0, void 0, void 0, function* () {
@@ -86,13 +104,24 @@ describe("Posts API Test Suite", () => {
             expect(response.statusCode).toBe(200);
             expect(response.body._id).toBe(postId);
         }));
+        test("Should return 400 and an error message if PostModel.findById throws an error", () => __awaiter(void 0, void 0, void 0, function* () {
+            jest
+                .spyOn(posts_model_1.default, "findById")
+                .mockRejectedValueOnce(new Error("Database query error"));
+            const response = yield (0, supertest_1.default)(app).get("/posts/invalid-id");
+            expect(response.statusCode).toBe(400);
+            expect(response.text).toBe("Database query error");
+        }));
         test("Should fail to get a non-existent post by ID", () => __awaiter(void 0, void 0, void 0, function* () {
             const response = yield (0, supertest_1.default)(app).get("/posts/67447b032ce3164be7c4412d");
             expect(response.statusCode).toBe(400);
         }));
     });
     test("Should update a post by ID", () => __awaiter(void 0, void 0, void 0, function* () {
-        const updatedPost = { sender: "Hodaya", message: "This is an updated test post" };
+        const updatedPost = {
+            sender: "Hodaya",
+            message: "This is an updated test post",
+        };
         const response = yield (0, supertest_1.default)(app)
             .put(`/posts/${postId}`)
             .set("authorization", `JWT ${accessToken}`)
@@ -102,7 +131,10 @@ describe("Posts API Test Suite", () => {
         expect(response.body.message).toBe(updatedPost.message);
     }));
     test("Should fail to update a post with invalid ID", () => __awaiter(void 0, void 0, void 0, function* () {
-        const updatedPost = { sender: "Hodaya", message: "This is an updated test post" };
+        const updatedPost = {
+            sender: "Hodaya",
+            message: "This is an updated test post",
+        };
         const invalidPostId = "6777b39a4c79d92f497af3eb";
         const response = yield (0, supertest_1.default)(app)
             .put(`/posts/${invalidPostId}`)

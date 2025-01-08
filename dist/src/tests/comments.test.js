@@ -119,9 +119,32 @@ describe("Comments Test Suite", () => {
         expect(response.statusCode).toBe(200);
         expect(response.body._id).toBe(commentId);
     }));
+    test("Should return comments filtered by sender", () => __awaiter(void 0, void 0, void 0, function* () {
+        const response = yield (0, supertest_1.default)(app)
+            .get("/comments")
+            .query({ sender: "testSender1" })
+            .set("authorization", `JWT ${testUser.token}`);
+        expect(response.statusCode).toBe(200);
+        expect(response.body).toHaveLength(1);
+        expect(response.body[0].sender).toBe("Tom");
+        expect(response.body[0].comment).toBe("Test comment");
+    }));
+    test("Should return 400 if there is a database error during query", () => __awaiter(void 0, void 0, void 0, function* () {
+        jest
+            .spyOn(comments_model_1.default, "find")
+            .mockRejectedValueOnce(new Error("Database error"));
+        const response = yield (0, supertest_1.default)(app)
+            .get("/comments")
+            .query({ sender: "testSender1" })
+            .set("authorization", `JWT ${testUser.token}`);
+        expect(response.statusCode).toBe(400);
+        expect(response.text).toBe("Database error");
+    }));
     test("Should handle errors when querying comments with a sender filter", () => __awaiter(void 0, void 0, void 0, function* () {
         const invalidSender = "nonexistentSender";
-        jest.spyOn(comments_model_1.default, "find").mockRejectedValueOnce(new Error("Database connection error"));
+        jest
+            .spyOn(comments_model_1.default, "find")
+            .mockRejectedValueOnce(new Error("Database connection error"));
         const response = yield (0, supertest_1.default)(app)
             .get(`/comments?sender=${invalidSender}`)
             .set("authorization", `JWT ${testUser.token}`);
@@ -154,7 +177,9 @@ describe("Comments Test Suite", () => {
         expect(response.body._id).toBe(commentId);
     }));
     test("Should return error when update fails due to DB issue", () => __awaiter(void 0, void 0, void 0, function* () {
-        jest.spyOn(comments_model_1.default, "findByIdAndUpdate").mockRejectedValueOnce(new Error("Database update error"));
+        jest
+            .spyOn(comments_model_1.default, "findByIdAndUpdate")
+            .mockRejectedValueOnce(new Error("Database update error"));
         const response = yield (0, supertest_1.default)(app)
             .put(`/comments/${commentId}`)
             .set("authorization", `JWT ${testUser.token}`)

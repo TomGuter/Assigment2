@@ -65,10 +65,7 @@ const getCommentById = (req, res) => __awaiter(void 0, void 0, void 0, function*
 const updateComment = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const commentId = req.params.id;
     const { comment } = req.body;
-    if (!commentId) {
-        res.status(400).send("Invalid id");
-    }
-    else if (!comment) {
+    if (!comment) {
         res.status(400).send("Problem with comment");
     }
     else {
@@ -76,9 +73,6 @@ const updateComment = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             const updated_comment = yield comments_model_1.default.findByIdAndUpdate(commentId, { comment }, { new: true, runValidators: true });
             if (updated_comment) {
                 res.status(200).send(updated_comment);
-            }
-            else {
-                res.status(404).send("Comment not found");
             }
         }
         catch (error) {
@@ -88,22 +82,11 @@ const updateComment = (req, res) => __awaiter(void 0, void 0, void 0, function* 
 });
 const deleteComment = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const id = req.params.id;
-    if (!id) {
-        res.status(400).send("Invalid id");
+    try {
+        yield comments_model_1.default.findByIdAndDelete(id);
     }
-    else {
-        try {
-            const deletedComment = yield comments_model_1.default.findByIdAndDelete(id);
-            if (deletedComment) {
-                res.status(200).send("Comment deleted successfully");
-            }
-            else {
-                res.status(404).send("Comment not found");
-            }
-        }
-        catch (error) {
-            res.status(400).json({ error: error.message });
-        }
+    catch (error) {
+        res.status(400).json({ error: error.message });
     }
 });
 exports.default = {
