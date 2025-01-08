@@ -13,22 +13,22 @@ import swaggerUI from "swagger-ui-express";
 
 const app = express();
 dotenv.config();
-
+console.log(process.env.DB_CONNECT);
 const options = {
   definition: {
     openapi: "3.0.0",
     info: {
       title: "Assignment 2 2025 REST API",
       version: "1.0.0",
-      description: "REST server including authentication using JWT, CRUD operations on posts and comments, and a user registration system.",
+      description:
+        "REST server including authentication using JWT, CRUD operations on posts and comments, and a user registration system.",
     },
-    servers: [{ url: "http://localhost:3000", },],
+    servers: [{ url: "http://localhost:3000" }],
   },
   apis: ["./src/routes/*.ts"],
 };
 const specs = swaggerJsDoc(options);
 app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(specs));
-
 
 const moduleApp = async (): Promise<Express> => {
   if (!process.env.DB_CONNECT) {
@@ -42,7 +42,6 @@ const moduleApp = async (): Promise<Express> => {
     console.error("Failed to connect to MongoDB", error);
     throw error;
   }
-
 
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({ extended: true }));
