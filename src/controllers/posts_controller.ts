@@ -10,7 +10,6 @@ const createPost = async (req: Request, res: Response) => {
     console.log("Created Post:", post);
     res.status(201).send(post);
   } catch (error) {
-    console.error("Error Creating Post:", error);
     res.status(400).send({ error: (error as Error).message, body: req.body });
   }
 };
@@ -57,33 +56,33 @@ const getPostBySender = async (req: Request, res: Response) => {
   }
 };
 
-const updatedPost = async (req: Request, res: Response) => {
+const updatePost = async (req: Request, res: Response) => {
   const id = req.params.id;
   const { sender, message } = req.body;
 
   if (!id) {
-    return res.status(400).send("Post ID is required");
+    res.status(400).send("Post ID is required");
+    return;
   }
 
   try {
-    const updatedPost = await PostModel.findByIdAndUpdate(id, {
-      sender,
-      message,
-    });
+    const updatedPost = await PostModel.findByIdAndUpdate(
+      id,
+      { sender, message },
+      { new: true, runValidators: true }
+    );
+
     if (updatedPost) {
-      updatedPost.sender = sender;
-      updatedPost.message = message;
-      await updatedPost.save();
-      res.send(updatedPost);
+      res.status(200).send(updatedPost);
     } else {
-      res.status(400).send("Post not found");
+      res.status(404).send("Post not found");
     }
   } catch (error) {
     res.status(400).send((error as Error).message);
   }
 };
 
-const deleteItem = async (req: Request, res: Response) => {
+const deletePost = async (req: Request, res: Response) => {
   const id = req.params.id;
   try {
     await postModel.findByIdAndDelete(id);
@@ -98,6 +97,6 @@ export default {
   getPosts,
   getPostById,
   getPostBySender,
-  updatedPost,
-  deleteItem,
+  updatePost,
+  deletePost,
 };

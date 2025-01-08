@@ -1,51 +1,50 @@
 import CommentModel from "../models/comments_model";
-import postModel from "../models/posts_model";
+import PostModel from "../models/posts_model";
 import { Request, Response } from "express";
 
-const getAll = async (req: Request, res: Response) => {
-  const filter = { ...req.query };
+const getAllComments = async (req: Request, res: Response) => {
   try {
-    const data = await CommentModel.find();
-    res.status(200).send(data);
+    const comments = await CommentModel.find();
+    res.status(200).send(comments);
   } catch (error) {
-    res.status(400).send(error);
+    res.status(400).send((error as Error).message);
   }
 };
 
 const createComment = async (req: Request, res: Response) => {
-  const { postId } = req.body;
-
+  const { body } = req;
   try {
-    const post = await postModel.findById(postId);
-
-    if (post) {
-      const comment = await CommentModel.create(req.body);
-      return res.status(202).send(comment);
+    console.log("Received Comment Data:", body);
+    const post = await PostModel.findById(body.postId);
+    
+    if (!post) {
+      res.status(400).send("Post not found for the provided ID.");
     } else {
-      return res.status(400).send("Post by ID not found");
+      const newComment = await CommentModel.create(body);
+      console.log("Created Comment:", newComment);
+      res.status(201).send(newComment);
     }
   } catch (error) {
-    return res.status(400).send((error as Error).message);
+    res.status(400).send((error as Error).message);
   }
 };
 
 const getCommentById = async (req: Request, res: Response) => {
-  const postId = req.params.id;
-
-  if (postId) {
-    try {
-      const comments = await CommentModel.find({ postId });
-
-      if (comments) {
-        return res.send(comments);
+  const filter = req.query.sender;
+  try {
+    if (filter) {
+      const comments = await CommentModel.find({ sender: filter });
+      res.send(comments);
+    } else {
+      const comment = await CommentModel.findById(req.params.id);
+      if (comment) {
+        res.send(comment);
       } else {
-        return res.status(400).send("comments for this post were not found");
+        res.status(404).send("Comment not found");
       }
-    } catch (error) {
-      return res.status(400).send((error as Error).message);
     }
-  } else {
-    return res.status(400).send("Porblem with Id");
+  } catch (error) {
+    res.status(400).send((error as Error).message);
   }
 };
 
@@ -54,57 +53,52 @@ const updateComment = async (req: Request, res: Response) => {
   const { comment } = req.body;
 
   if (!commentId) {
-    return res.status(400).send("Invalid id");
-  }
-  if (!comment) {
-    return res.status(400).send("Problem with comment");
-  }
+    res.status(400).send("Invalid id");
+  } else if (!comment) {
+    res.status(400).send("Problem with comment");
+  } else {
+    try {
+      const updated_comment = await CommentModel.findByIdAndUpdate(
+        commentId,
+        { comment },
+        { new: true, runValidators: true }
+      );
 
-  try {
-    const updated_comment = await CommentModel.findByIdAndUpdate(
-      commentId,
-      { comment },
-      {
-        new: true,
-        runValidators: true,
+      if (updated_comment) {
+        res.status(200).send(updated_comment);
+      } else {
+        res.status(404).send("Comment not found");
       }
-    );
-
-    if (updated_comment) {
-      return res.status(202).send(updated_comment);
-    } else {
-      return res.status(400).send("Comment not found");
+    } catch (error) {
+      res.status(400).send((error as Error).message);
     }
-  } catch (error) {
-    return res.status(400).send((error as Error).message);
   }
 };
 
 const deleteComment = async (req: Request, res: Response) => {
   const id = req.params.id;
 
-  if (id) {
+  if (!id) {
+    res.status(400).send("Invalid id");
+  } else {
     try {
-      const post = await CommentModel.findByIdAndDelete(id);
-      if (post) {
-        return res
-          .status(200)
-          .send(`Comment with id ${id} deleted successfully.`);
+      const deletedComment = await CommentModel.findByIdAndDelete(id);
+      if (deletedComment) {
+        res.status(200).send("Comment deleted successfully");
       } else {
-        return res.status(200).send("Comment not found");
+        res.status(404).send("Comment not found");
       }
     } catch (error) {
-      return res.status(400).send((error as Error).message);
+      res.status(400).json({ error: (error as Error).message });
     }
-  } else {
-    return res.status(400).send("Invalid id");
   }
 };
 
+
 export default {
+  getAllComments,
   createComment,
   getCommentById,
   updateComment,
   deleteComment,
-  getAll,
 };

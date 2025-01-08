@@ -1,129 +1,151 @@
 import request from "supertest";
 import initApp from "../server";
 import mongoose from "mongoose";
-import postsModel from "../models/posts_model";
+import postModel from "../models/posts_model";
 import { Express } from "express";
-import userModel from "../models/user_model";
 
 let app: Express;
+let accessToken: string;
+let postId = "";
 
-type UserInfo = {
-  email: string;
-  password: string;
-  token?: string;
-  _id?: string;
-};
-const userInfo: UserInfo = {
-  email: "hodaya@gmail.com",
+const testUser = {
+  email: "test@user.com",
   password: "123456",
 };
 
+const testPost = {
+  sender: "user_id",
+  message: "Test content",
+};
+
+const invalidPost = {
+  content: "Test content",
+};
+
+
 beforeAll(async () => {
   app = await initApp();
-  await postsModel.deleteMany();
-  await userModel.deleteMany();
-  await request(app).post("/auth/register").send(userInfo);
-  const response = await request(app).post("/auth/login").send(userInfo);
-  userInfo.token = response.body.accessToken;
-  userInfo._id = response.body._id;
+  await postModel.deleteMany();
+
+  await request(app).post("/auth/register").send(testUser);
+  const loginResponse = await request(app).post("/auth/login").send(testUser);
+  expect(loginResponse.statusCode).toBe(200);
+
+  accessToken = loginResponse.body.accessToken;
+  testPost.sender = loginResponse.body._id;
 });
 
 afterAll(async () => {
   await mongoose.connection.close();
 });
 
-var postId = "";
 
-const testPost1 = {
-  sender: "hodaya",
-  message: "Test Message",
-};
-
-const testPost2 = {
-  sender: "Eliav2",
-  message: "This is my first post 2",
-};
-
-const testPostFail = {
-  message: "This is my first post 2",
-  sender: "Eliav2",
-};
-
-describe("Posts Tests", () => {
-  test("Posts Get All test", async () => {
-    const response = await request(app).get("/posts");
-    console.log(response.body);
-    expect(response.statusCode).toBe(200);
+describe("Posts API Test Suite", () => {
+  describe("GET /posts", () => {
+    test("Should return an empty list of posts initially", async () => {
+      const response = await request(app).get("/posts");
+      expect(response.statusCode).toBe(200);
+      expect(response.body).toHaveLength(0);
+    });
   });
 
-  test("Posts Create test", async () => {
+  describe("POST /posts", () => {
+    test("Should add a new post successfully", async () => {
+      const response = await request(app)
+        .post("/posts")
+        .set("authorization", `JWT ${accessToken}`)
+        .send(testPost);
+
+      expect(response.statusCode).toBe(201);
+      expect(response.body.sender).toBe(testPost.sender);
+      expect(response.body.message).toBe(testPost.message);
+
+      postId = response.body._id;
+    });
+
+    test("Should fail to add an invalid post", async () => {
+      const response = await request(app)
+        .post("/posts")
+        .set("authorization", `JWT ${accessToken}`)
+        .send(invalidPost);
+
+      expect(response.statusCode).not.toBe(201);
+    });
+  });
+
+  describe("GET /posts after adding a post", () => {
+    test("Should return a list with one post", async () => {
+      const response = await request(app).get("/posts");
+      expect(response.statusCode).toBe(200);
+      expect(response.body).toHaveLength(1);
+    });
+
+    test("Should get post by sender", async () => {
+      const response = await request(app).get(`/posts?sender=${testPost.sender}`);
+      expect(response.statusCode).toBe(200);
+      expect(response.body).toHaveLength(1);
+      expect(response.body[0].sender).toBe(testPost.sender);
+    });
+
+    test("Should get post by ID", async () => {
+      const response = await request(app).get(`/posts/${postId}`);
+      expect(response.statusCode).toBe(200);
+      expect(response.body._id).toBe(postId);
+    });
+
+    test("Should fail to get a non-existent post by ID", async () => {
+      const response = await request(app).get("/posts/67447b032ce3164be7c4412d");
+      expect(response.statusCode).toBe(400);
+    });
+  });
+
+    test("Should update a post by ID", async () => {
+    const updatedPost = { sender: "Hodaya", message: "This is an updated test post" };
+  
     const response = await request(app)
-      .post("/posts")
-      .set("authorization", "JWT " + userInfo.token)
-      .send(testPost1);
-    console.log(response.body);
-    const post = response.body;
-    expect(response.statusCode).toBe(201);
-    expect(post.sender).toBe(testPost1.sender);
-    expect(post.message).toBe(testPost1.message);
-    postId = post._id;
-  });
-
-  test("Posts Get By Id test", async () => {
-    const response = await request(app).get("/posts/" + postId);
-    const post = response.body;
-    console.log("/posts/" + postId);
-    console.log(post);
+      .put(`/posts/${postId}`)
+      .set("authorization", `JWT ${accessToken}`)
+      .send(updatedPost);
+  
     expect(response.statusCode).toBe(200);
-    expect(response.body._id).toBe(post._id);
+    expect(response.body.sender).toBe(updatedPost.sender);
+    expect(response.body.message).toBe(updatedPost.message);
   });
 
-  test("Posts Get By Id test fail", async () => {
-    const response = await request(app).get("/posts/" + postId + "3");
-    const post = response.body;
-    expect(response.statusCode).toBe(400);
-  });
-
-  test("Posts Create test", async () => {
+    test("Should fail to update a post with invalid ID", async () => {
+    const updatedPost = { sender: "Hodaya", message: "This is an updated test post" };
+    const invalidPostId = "6777b39a4c79d92f497af3eb";
+  
     const response = await request(app)
-      .post("/posts")
-      .set("authorization", "JWT " + userInfo.token)
-      .send({ ...testPost1, sender: userInfo._id }); // Add sender if needed.
-
-    console.log("Response Body:", response.body);
-    const post = response.body;
-
-    expect(response.statusCode).toBe(201);
-    expect(post.sender).toBe(userInfo._id);
-    expect(post.message).toBe(testPost1.message);
-    postId = post._id;
+      .put(`/posts/${invalidPostId}`)
+      .set("authorization", `JWT ${accessToken}`)
+      .send(updatedPost);
+  
+    expect(response.statusCode).not.toBe(200);
   });
 
-  test("Posts Create test fail", async () => {
-    const response = await request(app).post("/posts").send(testPostFail);
-    expect(response.statusCode).not.toBe(201);
+    describe("DELETE /posts/:id", () => {
+    test("Should delete a post successfully", async () => {
+      const deleteResponse = await request(app)
+        .delete(`/posts/${postId}`)
+        .set("authorization", `JWT ${accessToken}`);
+      expect(deleteResponse.statusCode).toBe(200);
+  
+      const getResponse = await request(app).get(`/posts/${postId}`);
+      expect(getResponse.statusCode).toBe(400);
+    });
+  
+    test("Should fail to delete a post with invalid ID", async () => {
+      const invalidPostId = "invalidPostId";
+  
+      const deleteResponse = await request(app)
+        .delete(`/posts/${invalidPostId}`)
+        .set("authorization", `JWT ${accessToken}`);
+      expect(deleteResponse.statusCode).not.toBe(200);
+    });
   });
 
-  test("Posts get posts by sender", async () => {
-    const response = await request(app).get("/posts?sender=" + userInfo._id);
-    const post = response.body[0];
-    expect(response.statusCode).toBe(200);
-    expect("hodaya").toBe(testPost1.sender);
-    expect(response.body.length).toBe(1);
-  });
-
-  test("Posts Delete test", async () => {
-    const response = await request(app)
-      .delete("/posts/" + postId)
-      .set("authorization", "JWT " + userInfo.token);
-    expect(response.statusCode).toBe(200);
-
-    const respponse2 = await request(app).get("/posts/" + postId);
-    expect(respponse2.statusCode).toBe(400);
-
-    const respponse3 = await request(app).get("/posts/" + postId);
-    const post = respponse3.body;
-    console.log(post);
-    expect(respponse3.statusCode).toBe(400);
-  });
+  
 });
+
+
